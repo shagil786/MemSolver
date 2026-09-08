@@ -27,6 +27,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from lab.gateway import SimGateway, make_server  # noqa: E402
+from lab.realgateway import RealGateway  # noqa: E402
 
 
 def run_one_case(agent, gw: SimGateway, case: dict, seed_path: str) -> dict:
@@ -130,6 +131,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--prune", action="store_true",
                     help="advertise only the tools this case needs (system-prompt pruning)")
     ap.add_argument("--quiet", action="store_true")
+    ap.add_argument("--real-url", default=None,
+                    help="forward calls to a real OpenAI-compatible provider "
+                         "(recording pass-through gateway); the simulator is not used")
     ap.add_argument("--prefix-cache", action="store_true",
                     help="free self-hosted prompt-prefix cache (bills only the new suffix)")
     ap.add_argument("--compact", action="store_true",
@@ -157,8 +161,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.limit:
         cases = cases[: args.limit]
 
-    gw = SimGateway(args.defs, run_dir / "ledger.jsonl", args.seed,
-                    cache=not args.no_cache, prefix_cache=args.prefix_cache)
+    if args.real_url:
+        gw = RealGateway(args.real_url, run_dir / "ledger.jsonl")
+    else:
+        gw = SimGateway(args.defs, run_dir / "ledger.jsonl", args.seed,
+                        cache=not args.no_cache, prefix_cache=args.prefix_cache)
     server = make_server(gw)
     thread = None
     import threading
@@ -227,6 +234,7 @@ def main(argv: list[str] | None = None) -> int:
         "verify_model": args.verify_model if args.verify else None,
         "verify_scope": args.verify_scope if args.verify else None,
         "compact": args.compact,
+        "real_url": args.real_url,
         "n": len(outcomes),
         "wall_s": round(time.time() - started, 1),
     }

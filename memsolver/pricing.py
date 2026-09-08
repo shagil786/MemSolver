@@ -47,6 +47,26 @@ def resolve(model_or_alias: str) -> str:
     )
 
 
+# Real provider model ids the recording gateway can bill at pinned list prices
+# (prices from the challenge's MODELS.md / public list prices).
+REAL_MODELS: dict[str, dict] = {
+    "gpt-4.1-mini-2025-04-14": {"input": 0.40, "output": 1.60, "tier": "mini"},
+    "gpt-4.1-nano-2025-04-14": {"input": 0.10, "output": 0.40, "tier": "nano"},
+    "gpt-5-mini-2025-08-07":   {"input": 0.25, "output": 2.00, "tier": "mini"},
+}
+
+
+def real_cost(model_id: str, input_tokens: int, output_tokens: int) -> float:
+    """Ledger cost for a real provider model at pinned list prices."""
+    info = REAL_MODELS.get(model_id, {"input": 0.50, "output": 1.50, "tier": "mini"})
+    cost = (input_tokens / 1_000_000.0) * info["input"] + (output_tokens / 1_000_000.0) * info["output"]
+    return round(cost, 9)
+
+
+def real_tier(model_id: str) -> str:
+    return REAL_MODELS.get(model_id, {}).get("tier", "mini")
+
+
 def cost_for(tier: str, input_tokens: int, output_tokens: int) -> float:
     """Exact cost at pinned list prices = in/1M*in_price + out/1M*out_price."""
     model = resolve(tier)
