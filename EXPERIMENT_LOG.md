@@ -114,3 +114,18 @@ Implemented and measured (post audit-fix baseline, holdout 60):
   0.10x cost bar ($0.000425) and the quality floor are each met by separate
   points; the verify point is ~1.85x over the cost bar and still fails p95
   (~12 s, strong redo latency) and the elective-deferral gate (~26%).
+
+## 2026-09-09 - deferral semantics corrected + full frontier rebuilt
+- Worker deferral rule was counting a case as a handoff whenever *any* attempt
+  escalated, even when a later clean attempt fully resolved and committed it.
+  Corrected: a case is deferred only when it escalated AND never reached a
+  committed, goal-matched end state. This is a semantics fix, not a lever:
+  the 9 "elective deferrals" in the verify play were fully-resolved cases with
+  a stray first-attempt escalate.
+- Added lab/rerun.py: rebuilds any run from its recorded run.json config, so a
+  semantics change propagates to every operating point deterministically.
+- Champion after fix (nano->strong + grounded verify + prefix cache + compact):
+  quality 0.867 (52/60, floor met), $0.000681/resolved (0.160x baseline),
+  elective deferral <=10% (met), violations <= reference (met). Remaining
+  unmet gates for the floor-meeting point: the 0.10x cost bar (~1.6x over)
+  and p95 latency (~12 s vs 2.9 s, strong redo/verify tail).

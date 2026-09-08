@@ -79,7 +79,11 @@ def run_one_case(agent, gw: SimGateway, case: dict, seed_path: str) -> dict:
         escalated = "escalate" in attempted
         committed = "commit" in succeeded
         matched = score["goal_state_match"]
-        deferred = bool(escalated and not (required and matched and committed))
+        # A case is a handoff only when it never reached a committed, goal-matched
+        # end state. An escalate in an aborted attempt that a later clean attempt
+        # fully resolved is not a handoff - counting it made every redo case with
+        # a stray first-attempt escalate look deferred even when fully resolved.
+        deferred = bool(escalated and not (committed and matched))
         violations = sorted(set(case["goal_state"].get("audit_must_not_include", [])) & attempted)
 
         return {

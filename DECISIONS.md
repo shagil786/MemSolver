@@ -28,9 +28,11 @@ Record of the load-bearing choices in this lab and why they were made.
   verify→escalate path and the scorer marks them failed. This caps achievable
   quality near 0.93 (local holdout), so the 85.3% gate is nearly maxing the
   metric rather than the agent.
-- `deferred` = escalate was attempted and the run did not end in a matched,
-  committed, required-escalation resolution. Elective deferral = deferred on a
-  case that does not require escalation. Reported per OP-03.
+- `deferred` = escalate was attempted and the run never reached a committed,
+  goal-matched end state (a handoff). An escalate inside an aborted attempt
+  that a later clean attempt fully resolves does not count - that earlier
+  reading inflated deferrals on every redo case. Elective deferral = deferred
+  on a case that does not require escalation. Reported per OP-03.
 
 ## Levers shipped (solution copy, each isolated behind config)
 - **Schema pruning** (`--prune`): advertise only the tools the case needs;
