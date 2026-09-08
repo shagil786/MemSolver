@@ -7,3 +7,6 @@ results/*
 traces/
 .venv/
 *.egg-info/
+.zcode/
+.claude/
+.codex/
