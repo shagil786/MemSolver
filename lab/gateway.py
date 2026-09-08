@@ -99,8 +99,14 @@ class SimGateway:
         model = pricing.resolve(model)  # aliases/unknowns raise -> 400 upstream
         ctx = self.ctx_for(case_id, messages)
         override = os.environ.get("LLM_LAB_P_OVERRIDE")
-        p_correct = (float(override) if override else
-                     simconfig.profile(model, ctx.difficulty)["p_correct"])
+        if override:
+            p_correct = float(override)
+        else:
+            base = simconfig.profile(model, ctx.difficulty)["p_correct"]
+            scale = float(os.environ.get(f"LLM_LAB_P_SCALE_{model.upper()}")
+                          or os.environ.get("LLM_LAB_P_SCALE")
+                          or str(simconfig.P_SCALE.get(model, 1.0)))
+            p_correct = min(0.999, base * scale)
         attempt = plans._attempt_index(messages)
         step = len(plans._assistant_tools(messages))
 
