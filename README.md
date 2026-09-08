@@ -116,8 +116,8 @@ EXPERIMENT_LOG.md   what was tried and what it cost
 
 ## Testing on a real model
 
-The same harness can call a real OpenAI-compatible provider instead of the
-simulator. A recording gateway forwards the agent's calls, logs the real token
+You can point the same worker command at a real OpenAI-compatible
+provider instead of the simulator. A recording gateway forwards the agent's calls, logs the real token
 usage at pinned list prices, and lets the normal scorer and analysis run
 unchanged. Set your key in the environment and pick a budget model:
 
