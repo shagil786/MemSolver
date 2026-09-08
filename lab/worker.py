@@ -121,6 +121,11 @@ def main(argv: list[str] | None = None) -> int:
                     default=ROOT / "vendor" / "challenge" / "harbour" / "seed.json")
     ap.add_argument("--p-override", type=float, default=None,
                     help="force the plan-correctness probability (debug/calibration only)")
+    ap.add_argument("--ladder", default=None,
+                    help="attempt ladder, e.g. 'nano,strong' (requires the solution harbour)")
+    ap.add_argument("--prune", action="store_true",
+                    help="advertise only the tools this case needs (system-prompt pruning)")
+    ap.add_argument("--quiet", action="store_true")
     args = ap.parse_args(argv)
 
     run_dir = args.run_dir
@@ -131,7 +136,7 @@ def main(argv: list[str] | None = None) -> int:
     # inserting it at the front of sys.path selects which one we run.
     sys.path.insert(0, str(args.harbour_dir))
     if str(args.defs.parent) not in sys.path:
-        sys.path.insert(0, str(args.defs.parent))
+        sys.path.append(str(args.defs.parent))
     import harbour  # noqa: PLC0415
     from harbour import agent  # noqa: PLC0415
 
@@ -160,13 +165,17 @@ def main(argv: list[str] | None = None) -> int:
     )
     if args.p_override is not None:
         os.environ["LLM_LAB_P_OVERRIDE"] = str(args.p_override)
+    if args.ladder:
+        os.environ["H_AGENT_LADDER"] = args.ladder
+    if args.prune:
+        os.environ["H_AGENT_PRUNE"] = "1"
 
     outcomes = []
     started = time.time()
     for i, case in enumerate(cases, 1):
         rec = run_one_case(agent, gw, case, str(args.seed_data))
         outcomes.append(rec)
-        if i % 25 == 0 or i == len(cases):
+        if (i % 25 == 0 or i == len(cases)) and not args.quiet:
             print(f"  {i}/{len(cases)} cases ...", flush=True)
     server.shutdown()
 
@@ -190,6 +199,8 @@ def main(argv: list[str] | None = None) -> int:
         "harbour_dir": str(args.harbour_dir),
         "seed": args.seed,
         "cache": not args.no_cache,
+        "ladder": args.ladder,
+        "prune": args.prune,
         "n": len(outcomes),
         "wall_s": round(time.time() - started, 1),
     }
@@ -208,7 +219,7 @@ def main(argv: list[str] | None = None) -> int:
         "total_cost_usd": round(total_cost, 6),
         "cost_per_resolved_case": round(total_cost / resolved, 6) if resolved else None,
         "wall_s": meta["wall_s"],
-    }, indent=2))
+    }))
     return 0
 
 
