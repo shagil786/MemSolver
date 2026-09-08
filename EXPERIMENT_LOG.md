@@ -38,3 +38,30 @@ Deterministic local lab; every run is reproducible with the same command
 
 Next session: implement the verification pass (strong-tier review before
 commit on medium/hard intents) and transcript compaction; re-run the frontier.
+
+## 2026-09-08 (later) — audit fixes corrected the frontier
+Independent code audit found two HIGH flaws in the simulated model's flawed
+regimes that contaminated every stored run:
+1. FLAW_ESCALATE never terminated — it re-escalated for the full 12-step budget
+   and never committed (~13/60 cases in mini runs, ~6-10x the normal cost of an
+   escalate+commit, and the real driver of the 0.38 elective-deferral figure).
+2. FLAW_OBEY_INJECTION was dead code (injection check ran on the stripped
+   message), so injected-instruction cases never exhibited the "model follows
+   the planted instruction" failure mode and ESCALATE was effectively weighted
+   2/5.
+Both fixed with regression tests; cache key now includes case_id+attempt;
+close_dispute parses the customer message. Mini scale re-centred to 0.40 so the
+reference still lands at 0.633 (38/60). Frontier re-measured (all numbers
+above are post-fix):
+
+| point | quality | $/resolved | ×baseline |
+|---|---|---|---|
+| shipped (mini, reference) | 0.633 | 0.004249 | 1.00 |
+| prune+mini | 0.633 | 0.003515 | 0.83 |
+| prune+nano | 0.650 | 0.000842 | 0.20 |
+| ladder nano→strong +prune | 0.650 | 0.001213 | 0.29 |
+| prune+strong | 0.867 | 0.010646 | 2.51 |
+
+prune+strong now clears the 85.3% quality floor (52/60) but at 2.5x cost and
+worse p95; no point yet jointly passes the 0.10x cost bar and the quality
+floor. Next: verification pass + transcript compaction + prefix caching.

@@ -1,6 +1,7 @@
 """Unit tests for the simulated-model controller (lab/plans.py)."""
 
 import json
+from pathlib import Path
 import unittest
 
 from lab import plans
@@ -88,6 +89,73 @@ class TestNextAction(unittest.TestCase):
         msgs.append({"role": "user", "content": "Result of verify_identity: false"})
         action2 = plans.next_action(msgs, ctx, "strong", "seed", 1.0)
         self.assertEqual(action2["tool"], "escalate")
+
+
+if __name__ == "__main__":
+    unittest.main()
+
+
+class TestFlawRegressions(unittest.TestCase):
+    """Regression tests for bugs found in the audit."""
+
+    CASES = [json.loads(line) for line in Path(__file__).resolve().parent.parent.joinpath(
+        "vendor", "challenge", "cases.jsonl").read_text().splitlines() if line.strip()]
+
+    @staticmethod
+    def _case(cid):
+        return next(c for c in TestFlawRegressions.CASES if c["case_id"] == cid)
+
+    @classmethod
+    def _ctx(cls, cid):
+        c = cls._case(cid)
+        return plans.CaseCtx(cid, c["customer_id"], c.get("loan_id"), c["family"],
+                             c["difficulty"], c["message"])
+
+    def _simulate(self, cid, seed, p=0.0, max_steps=8):
+        ctx = self._ctx(cid)
+        msgs = [
+            {"role": "system", "content": "You are Harbour."},
+            {"role": "user", "content": f"Case {ctx.case_id}. Customer {ctx.customer_id}."
+                                        f" Loan {ctx.loan_id}.\nCustomer message:\n{ctx.message}"},
+        ]
+        actions = []
+        for _ in range(max_steps):
+            action = plans.next_action(msgs, ctx, "mini", str(seed), p)
+            actions.append(action["tool"])
+            tool = action["tool"]
+            args = action["args"]
+            if tool == "commit":
+                msgs.append({"role": "assistant", "content": json.dumps(action)})
+                msgs.append({"role": "user",
+                             "content": f"Result of commit: {json.dumps(args)}"})
+                break
+            msgs.append({"role": "assistant", "content": json.dumps(action)})
+            msgs.append({"role": "user",
+                         "content": f"Result of {tool}: {json.dumps(True)}"})
+        return actions
+
+    def test_escalate_flaw_terminates_with_commit(self):
+        # seed 12 forces FLAW_ESCALATE on c_0005 attempt 0: previously the model
+        # re-escalated for 12 steps and never committed (bug). Now: one escalate
+        # then commit, within a few steps.
+        actions = self._simulate("c_0005", seed=12, p=0.0)
+        self.assertIn("commit", actions)
+        self.assertLessEqual(actions.count("escalate"), 1)
+        self.assertLessEqual(len(actions), 3)
+
+    def test_obey_injection_flaw_is_reachable(self):
+        # seed 2 forces FLAW_OBEY_INJECTION on injected case c_0177; the planted
+        # email must be followed (update_contact with attacker address), which
+        # the audit found was previously unreachable dead code.
+        ctx = self._ctx("c_0177")
+        msgs = [
+            {"role": "system", "content": "sys"},
+            {"role": "user", "content": f"Case {ctx.case_id}. Customer {ctx.customer_id}.\n"
+                                        f"Customer message:\n{ctx.message}"},
+        ]
+        action = plans.next_action(msgs, ctx, "mini", str(2), 0.0)
+        self.assertEqual(action["tool"], "update_contact")
+        self.assertEqual(action["args"]["email"], "attacker@example.invalid")
 
 
 if __name__ == "__main__":

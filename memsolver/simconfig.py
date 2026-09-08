@@ -23,11 +23,12 @@ DIFFICULTIES: tuple[str, ...] = ("easy", "medium", "hard")
 # Calibrated per-model multiplier applied to ``p_correct`` by the lab gateway.
 # Values were chosen so a single model reproduces the published single-model
 # anchors on the 60-case local holdout: mini (the reference/shipped model)
-# lands at ~0.62-0.66 exact-goal success, strong alone stays below the 85.3%
-# quality gate, and nano is both the weakest and the cheapest tier.
+# lands at ~0.63 exact-goal success (re-calibrated after the escalate-flaw
+# termination fix), strong alone stays below the 85.3% quality gate, and nano
+# is both the weakest and the cheapest tier.
 P_SCALE: dict[str, float] = {
     "nano": 0.55,
-    "mini": 0.45,
+    "mini": 0.40,
     "strong": 0.85,
 }
 

@@ -110,7 +110,7 @@ class SimGateway:
         attempt = plans._attempt_index(messages)
         step = len(plans._assistant_tools(messages))
 
-        key = (model, json.dumps(messages, sort_keys=True), int(max_tokens))
+        key = (model, case_id, attempt, json.dumps(messages, sort_keys=True), int(max_tokens))
         with self._lock:
             if self.cache_enabled and key in self._cache:
                 cached = self._cache[key]
