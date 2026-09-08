@@ -85,3 +85,17 @@ Implemented and measured (post audit-fix baseline, holdout 60):
   passes cost bar + quality floor + p95 + elective-deferral gates; the two
   open fixes are scoping verification to medium/hard work and reducing cheap
   tier deferrals.
+
+## 2026-09-08 (final+) - global system-prompt cache and token diagnostic
+- Token-spend diagnostic on the ledgers showed that with per-case prefix
+  caching, ~93-97% of remaining cost is the FIRST call per case, and that call
+  is ~95% system prompt. Added a cross-case system-prompt cache (the pruned
+  system prompt is identical across cases -> cached once, reused free), which
+  is the same "stable system block" idea as provider prompt caching.
+- Result: shipped (mini) + prefix+system cache = $0.000217/resolved (0.05x),
+  prune+nano = $0.000146 (0.034x, quality 0.65), prune+nano->strong+verify =
+  $0.000956 (0.225x, quality 0.867 above the floor). The remaining cost in the
+  verify config is strong-tier redo attempts and verification calls, not the
+  prompt. Gate state: the 0.10x cost bar and the 85.3% quality floor are each
+  met by different points; verification point is ~2.3x over the cost bar and
+  also fails p95 and elective-deferral gates.

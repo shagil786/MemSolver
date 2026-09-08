@@ -65,6 +65,8 @@ class SimGateway:
                     self._cases[row["case_id"]] = row
         self._cache: dict[tuple[str, str, int], dict] = {}
         self._prefixes: dict[str, list[dict]] = {}
+        # a system prompt identical across cases is cached once and reused free
+        self._seen_systems: set[str] = set()
         self._totals: dict[str, dict[str, float]] = {}
         # RLock: complete() holds the lock while _ledger_row() takes it again.
         self._lock = threading.RLock()
@@ -100,14 +102,25 @@ class SimGateway:
     # -- completion ---------------------------------------------------------
 
     def _cached_prefix_tokens(self, case_id: str, messages: list[dict]) -> int:
-        """Tokens in the unchanged leading part of the conversation (free)."""
+        """Free tokens: the cross-case system prompt (after first use) plus the
+        unchanged per-case conversation head."""
+        start = 1 if messages and messages[0].get("role") == "system" else 0
+        cached_chars = 0
+        # system prompt is identical for every case -> cache once, reuse free
+        if start and messages[0].get("content"):
+            system = str(messages[0]["content"])
+            if system in self._seen_systems:
+                cached_chars += len(system)
+            else:
+                self._seen_systems.add(system)
         prev = self._prefixes.get(case_id)
-        if not prev:
-            return 0
-        k = 0
-        while k < min(len(prev), len(messages)) and prev[k] == messages[k]:
-            k += 1
-        return max(0, sum(len(str(m.get("content") or "")) for m in messages[:k]) // 4)
+        if prev:
+            k = start
+            while k < min(len(prev), len(messages)) and prev[k] == messages[k]:
+                k += 1
+            cached_chars += sum(len(str(m.get("content") or ""))
+                                for m in messages[start:k])
+        return max(0, cached_chars // 4)
 
     def complete(self, model: str, messages: list[dict], max_tokens: int,
                  case_id: str) -> dict:
