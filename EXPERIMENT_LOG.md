@@ -99,3 +99,18 @@ Implemented and measured (post audit-fix baseline, holdout 60):
   prompt. Gate state: the 0.10x cost bar and the 85.3% quality floor are each
   met by different points; verification point is ~2.3x over the cost bar and
   also fails p95 and elective-deferral gates.
+
+## 2026-09-08 (final++) - structured compaction lever
+- Implemented `--compact` (solution agent): lookup_loan results are projected
+  to the exact fields the decisions read, and a retried attempt's context is
+  the machine-parseable tool-result lines instead of a full transcript replay.
+  (Naive (tool,args)->result memoization saves nothing here: the transcript is
+  the cost, not tool execution - the projected/compact store is the equivalent
+  that does save.) One bug during bring-up: the compacted note must keep the
+  exact "Previous attempt transcript:" prefix or attempt indexing shifts and
+  quality drops - fixed.
+- Verify play at 86.7% quality: cost/resolved $0.000956 -> $0.000787 with
+  compaction (0.185x baseline). Gate state unchanged qualitatively: the
+  0.10x cost bar ($0.000425) and the quality floor are each met by separate
+  points; the verify point is ~1.85x over the cost bar and still fails p95
+  (~12 s, strong redo latency) and the elective-deferral gate (~26%).

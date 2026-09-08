@@ -351,10 +351,41 @@ def _free_text(value: Any) -> Iterable[str]:
             yield from _free_text(item)
 
 
+# Structured compaction lever (H_AGENT_COMPACT=1): the cost of a multi-turn
+# agent is the transcript re-sent on every call, so we keep tool results
+# verbatim but compact:
+#  * lookup_loan results are projected to exactly the fields the downstream
+#    decisions read (status, opened_on, autopay, email, verified),
+#  * a retried attempt's "previous transcript" carries only the tool-result
+#    lines (still machine-parseable), not the full replay of the attempt.
+_LOOKUP_KEEP = ("loan_id", "customer_id", "status", "opened_on", "autopay",
+                "customer_email", "customer_verified")
+
+
+def _project_result(tool: str, result: Any) -> Any:
+    if tool == "lookup_loan" and isinstance(result, dict):
+        return {k: result[k] for k in _LOOKUP_KEEP if k in result}
+    return result
+
+
 def _render_result(tool: str, result: Any) -> str:
+    result = _project_result(tool, result)
     parts = [f"Result of {tool}: {json.dumps(result, default=str)}"]
     parts.extend(_free_text(result))
     return "\n".join(parts)
+
+
+def _compact_carried(messages: list[dict[str, str]]) -> str:
+    """Previous-attempt context as parseable tool-result lines only."""
+    lines = [
+        str(m.get("content") or "")
+        for m in messages[2:]
+        if m.get("role") == "user"
+        and str(m.get("content") or "").startswith("Result of ")
+    ]
+    if not lines:
+        lines = ["(no tool results from the previous attempt)"]
+    return "Previous attempt transcript:\nCompacted to tool results:\n" + "\n".join(lines)
 
 
 def _call_tool(
@@ -506,12 +537,15 @@ def run_case(
             if needs_retry and attempt < MAX_ATTEMPTS - 1:
                 # Start the conversation over with what we learned last time, so
                 # the model does not repeat the step that failed.
-                carried_transcript.append(
-                    "Previous attempt transcript:\n"
-                    + "\n".join(
-                        f"{m['role']}: {m['content']}" for m in messages[2:]
+                if os.environ.get("H_AGENT_COMPACT") == "1":
+                    carried_transcript.append(_compact_carried(messages))
+                else:
+                    carried_transcript.append(
+                        "Previous attempt transcript:\n"
+                        + "\n".join(
+                            f"{m['role']}: {m['content']}" for m in messages[2:]
+                        )
                     )
-                )
                 continue
 
             actions_taken = list(dict.fromkeys(attempt_actions))

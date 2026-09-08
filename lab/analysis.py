@@ -144,12 +144,18 @@ ORDER = [
      "Prune + start on nano, escalate failed attempts to strong."),
     ("prune-nano-pc", "schema prune, nano + prefix cache", False,
      "Prune + nano + free prefix cache (bills only the new suffix per call)."),
+    ("prune-nano-pc-compact", "prune, nano + prefix cache + compact context", False,
+     "Adds structured compaction: projected read results and compact retry "
+     "context instead of full transcript replay."),
     ("prune-mini-pc-verify", "prune, mini->strong + verify + prefix cache", False,
      "Mini with a strong grounded verification pass before commit (redo on "
      "detected flaws), prefix-cached."),
     ("prune-nano-ladderNS-verify-pc", "nano->strong + grounded verify + prefix cache", False,
      "Nano on attempt 0, strong on retry, strong grounded verification before "
      "commit, free prefix cache - the cheap quality play."),
+    ("prune-nano-ladderNS-verify-pc-compact", "verify + prefix cache + compact context", False,
+     "The verification play plus structured compaction of retry context and "
+     "read results."),
     ("prune-nano-ladderNS-verify", "nano->strong + verify, NO prefix cache", True,
      "Same as above without prefix caching - verify re-reads the whole "
      "transcript each time (rejected: verification only pays with caching)."),
