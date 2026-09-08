@@ -43,7 +43,6 @@ def summary_of(directory: Path) -> dict:
     runs = [json.loads(l) for l in (directory / "runs.jsonl").read_text().splitlines() if l.strip()]
     meta = json.loads((directory / "run.json").read_text())
     n = len(details)
-    required = {"escalate"}  # placeholder; recomputed from case defs below
     return {"directory": directory, "details": details, "runs": runs, "meta": meta, "n": n}
 
 

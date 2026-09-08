@@ -314,47 +314,6 @@ def _history_errors(messages: list[dict]) -> dict[str, list[str]]:
     return errs
 
 
-def _all_result_text(messages: list[dict]) -> list[str]:
-    """The rendered tool-result messages, in order (any attempt)."""
-    return [
-        str(m.get("content") or "")
-        for m in messages
-        if m.get("role") == "user" and str(m.get("content") or "").startswith("Result of ")
-    ]
-
-
-def _lookup_value(messages: list[dict]) -> dict[str, Any] | None:
-    """The most recent successful lookup_loan row dict, if any."""
-    for m in reversed(messages):
-        if m.get("role") != "user":
-            continue
-        text = str(m.get("content") or "")
-        if not text.startswith("Result of lookup_loan: "):
-            continue
-        payload = text.split(": ", 1)[1]
-        try:
-            parsed = json.loads(payload)
-        except json.JSONDecodeError:
-            continue
-        if isinstance(parsed, dict):
-            return parsed
-    return None
-
-
-def _onfile_email(messages: list[dict]) -> str | None:
-    val = _lookup_value(messages)
-    if val:
-        em = val.get("customer_email")
-        if isinstance(em, str) and em:
-            return em
-    return None
-
-
-def _last4(text: str) -> str:
-    runs = _LAST4_RE.findall(text)
-    return runs[-1] if runs else "0000"
-
-
 # ---------------------------------------------------------------------------
 # Decision helpers shared by the family machines
 # ---------------------------------------------------------------------------
