@@ -156,6 +156,15 @@ ORDER = [
     ("prune-nano-ladderNS-verify-pc-compact", "verify + prefix cache + compact context", False,
      "The verification play plus structured compaction of retry context and "
      "read results."),
+    ("verify-all-mini", "verify with mini (cheaper), all attempts", True,
+     "Same play but the verifier is mini not strong (detect 0.45). Rejected: "
+     "drops to 51/60 on the holdout - the strong verifier's marginal catch is "
+     "the 52nd match."),
+    ("verify-first-strong", "verify attempt 0 only, strong", True,
+     "Verify only the first attempt (trust stronger retries). Rejected: 51/60 "
+     "on the holdout; the second verify catches one floor-critical case."),
+    ("verify-first-mini", "verify attempt 0 only, mini", True,
+     "Cheapest scope/model. Rejected: 50/60 on the holdout."),
     ("prune-nano-ladderNS-verify", "nano->strong + verify, NO prefix cache", True,
      "Same as above without prefix caching - verify re-reads the whole "
      "transcript each time (rejected: verification only pays with caching)."),

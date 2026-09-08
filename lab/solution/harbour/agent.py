@@ -433,6 +433,9 @@ def run_case(
     verify_on = os.environ.get("H_AGENT_VERIFY") == "grounded"
     verify_model = os.environ.get("H_AGENT_VERIFY_MODEL") or "strong"
     verify_max = int(os.environ.get("H_AGENT_VERIFY_MAX", "2"))
+    # "first" verifies only attempt 0: once a retry runs on a stronger ladder
+    # model we trust that attempt (saves the second verify call and its p95).
+    verify_scope = os.environ.get("H_AGENT_VERIFY_SCOPE", "all")
     verifications = 0
 
     with tracing.start_span("case", **{"harbour.case_id": case_id}):
@@ -475,7 +478,8 @@ def run_case(
                     reported = args.get("actions_taken")
                     if isinstance(reported, list):
                         attempt_actions.extend(str(a) for a in reported)
-                    if verify_on and verifications < verify_max:
+                    if (verify_on and verifications < verify_max
+                            and (verify_scope != "first" or attempt == 0)):
                         verifications += 1
                         gen = attempt_model or os.environ.get("LLM_MODEL", "mini")
                         vresp = llm.complete(

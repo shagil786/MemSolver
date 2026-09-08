@@ -133,6 +133,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--verify", action="store_true",
                     help="grounded verification pass before commit (solution harbour)")
     ap.add_argument("--verify-model", default="strong")
+    ap.add_argument("--verify-scope", default="all", choices=("all", "first"))
     ap.add_argument("--verify-max", default="2")
     args = ap.parse_args(argv)
 
@@ -184,6 +185,7 @@ def main(argv: list[str] | None = None) -> int:
         os.environ["H_AGENT_VERIFY"] = "grounded"
         os.environ["H_AGENT_VERIFY_MODEL"] = args.verify_model
         os.environ["H_AGENT_VERIFY_MAX"] = args.verify_max
+        os.environ["H_AGENT_VERIFY_SCOPE"] = args.verify_scope
 
     outcomes = []
     started = time.time()
@@ -219,6 +221,7 @@ def main(argv: list[str] | None = None) -> int:
         "prefix_cache": args.prefix_cache,
         "verify": args.verify,
         "verify_model": args.verify_model if args.verify else None,
+        "verify_scope": args.verify_scope if args.verify else None,
         "compact": args.compact,
         "n": len(outcomes),
         "wall_s": round(time.time() - started, 1),
