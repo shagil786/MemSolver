@@ -1,0 +1,401 @@
+{
+  "shipped-baseline": {
+    "label": "shipped agent, gpt-4.1-mini class (reference)",
+    "config": {
+      "model": "mini",
+      "tag": "shipped-baseline",
+      "cases_file": "lab/splits/holdout.jsonl",
+      "harbour_dir": "vendor/challenge",
+      "seed": "op03-lab-v1",
+      "cache": true,
+      "ladder": null,
+      "prune": false,
+      "prefix_cache": false,
+      "verify": false,
+      "verify_model": null,
+      "verify_scope": null,
+      "compact": false,
+      "n": 60,
+      "wall_s": 0.8
+    },
+    "reader_ok": true
+  },
+  "shipped-prefixcache": {
+    "label": "shipped + free prefix cache",
+    "config": {
+      "model": "mini",
+      "tag": "shipped-prefixcache",
+      "cases_file": "lab/splits/holdout.jsonl",
+      "harbour_dir": "vendor/challenge",
+      "seed": "op03-lab-v1",
+      "cache": true,
+      "ladder": null,
+      "prune": false,
+      "prefix_cache": true,
+      "verify": false,
+      "verify_model": null,
+      "verify_scope": null,
+      "compact": false,
+      "n": 60,
+      "wall_s": 0.8
+    },
+    "reader_ok": true
+  },
+  "sol-noprune-mini": {
+    "label": "solution no-op, mini",
+    "config": {
+      "model": "mini",
+      "tag": "sol-noprune-mini",
+      "cases_file": "lab/splits/holdout.jsonl",
+      "harbour_dir": "lab/solution",
+      "seed": "op03-lab-v1",
+      "cache": true,
+      "ladder": null,
+      "prune": false,
+      "prefix_cache": false,
+      "verify": false,
+      "verify_model": null,
+      "verify_scope": null,
+      "compact": false,
+      "n": 60,
+      "wall_s": 0.8
+    },
+    "reader_ok": true
+  },
+  "prune-mini": {
+    "label": "schema prune, mini",
+    "config": {
+      "model": "mini",
+      "tag": "prune-mini",
+      "cases_file": "lab/splits/holdout.jsonl",
+      "harbour_dir": "lab/solution",
+      "seed": "op03-lab-v1",
+      "cache": true,
+      "ladder": null,
+      "prune": true,
+      "prefix_cache": false,
+      "verify": false,
+      "verify_model": null,
+      "verify_scope": null,
+      "compact": false,
+      "n": 60,
+      "wall_s": 0.7
+    },
+    "reader_ok": true
+  },
+  "prune-nano": {
+    "label": "schema prune, nano",
+    "config": {
+      "model": "nano",
+      "tag": "prune-nano",
+      "cases_file": "lab/splits/holdout.jsonl",
+      "harbour_dir": "lab/solution",
+      "seed": "op03-lab-v1",
+      "cache": true,
+      "ladder": null,
+      "prune": true,
+      "prefix_cache": false,
+      "verify": false,
+      "verify_model": null,
+      "verify_scope": null,
+      "compact": false,
+      "n": 60,
+      "wall_s": 0.7
+    },
+    "reader_ok": true
+  },
+  "nano-noprune": {
+    "label": "nano, full prompt",
+    "config": {
+      "model": "nano",
+      "tag": "nano-noprune",
+      "cases_file": "lab/splits/holdout.jsonl",
+      "harbour_dir": "lab/solution",
+      "seed": "op03-lab-v1",
+      "cache": true,
+      "ladder": null,
+      "prune": false,
+      "prefix_cache": false,
+      "verify": false,
+      "verify_model": null,
+      "verify_scope": null,
+      "compact": false,
+      "n": 60,
+      "wall_s": 0.7
+    },
+    "reader_ok": true
+  },
+  "ladder-ns-prune": {
+    "label": "nano->strong ladder + prune",
+    "config": {
+      "model": "nano",
+      "tag": "ladder-ns-prune",
+      "cases_file": "lab/splits/holdout.jsonl",
+      "harbour_dir": "lab/solution",
+      "seed": "op03-lab-v1",
+      "cache": true,
+      "ladder": "nano,strong",
+      "prune": true,
+      "prefix_cache": false,
+      "verify": false,
+      "verify_model": null,
+      "verify_scope": null,
+      "compact": false,
+      "n": 60,
+      "wall_s": 0.7
+    },
+    "reader_ok": true
+  },
+  "prune-nano-pc": {
+    "label": "schema prune, nano + prefix cache",
+    "config": {
+      "model": "nano",
+      "tag": "prune-nano-pc",
+      "cases_file": "lab/splits/holdout.jsonl",
+      "harbour_dir": "lab/solution",
+      "seed": "op03-lab-v1",
+      "cache": true,
+      "ladder": null,
+      "prune": true,
+      "prefix_cache": true,
+      "verify": false,
+      "verify_model": null,
+      "verify_scope": null,
+      "compact": false,
+      "n": 60,
+      "wall_s": 0.7
+    },
+    "reader_ok": true
+  },
+  "prune-nano-pc-compact": {
+    "label": "prune, nano + prefix cache + compact context",
+    "config": {
+      "model": "nano",
+      "tag": "prune-nano-pc-compact",
+      "cases_file": "lab/splits/holdout.jsonl",
+      "harbour_dir": "lab/solution",
+      "seed": "op03-lab-v1",
+      "cache": true,
+      "ladder": null,
+      "prune": true,
+      "prefix_cache": true,
+      "verify": false,
+      "verify_model": null,
+      "verify_scope": null,
+      "compact": true,
+      "n": 60,
+      "wall_s": 0.8
+    },
+    "reader_ok": true
+  },
+  "prune-mini-pc-verify": {
+    "label": "prune, mini->strong + verify + prefix cache",
+    "config": {
+      "model": "mini",
+      "tag": "prune-mini-pc-verify",
+      "cases_file": "lab/splits/holdout.jsonl",
+      "harbour_dir": "lab/solution",
+      "seed": "op03-lab-v1",
+      "cache": true,
+      "ladder": "mini,strong",
+      "prune": true,
+      "prefix_cache": true,
+      "verify": true,
+      "verify_model": "strong",
+      "verify_scope": "all",
+      "compact": false,
+      "n": 60,
+      "wall_s": 0.9
+    },
+    "reader_ok": true
+  },
+  "prune-nano-ladderNS-verify-pc": {
+    "label": "nano->strong + grounded verify + prefix cache",
+    "config": {
+      "model": "nano",
+      "tag": "prune-nano-ladderNS-verify-pc",
+      "cases_file": "lab/splits/holdout.jsonl",
+      "harbour_dir": "lab/solution",
+      "seed": "op03-lab-v1",
+      "cache": true,
+      "ladder": "nano,strong",
+      "prune": true,
+      "prefix_cache": true,
+      "verify": true,
+      "verify_model": "strong",
+      "verify_scope": "all",
+      "compact": false,
+      "n": 60,
+      "wall_s": 0.8
+    },
+    "reader_ok": true
+  },
+  "prune-nano-ladderNS-verify-pc-compact": {
+    "label": "verify + prefix cache + compact context",
+    "config": {
+      "model": "nano",
+      "tag": "prune-nano-ladderNS-verify-pc-compact",
+      "cases_file": "lab/splits/holdout.jsonl",
+      "harbour_dir": "lab/solution",
+      "seed": "op03-lab-v1",
+      "cache": true,
+      "ladder": "nano,strong",
+      "prune": true,
+      "prefix_cache": true,
+      "verify": true,
+      "verify_model": "strong",
+      "verify_scope": "all",
+      "compact": true,
+      "n": 60,
+      "wall_s": 0.8
+    },
+    "reader_ok": true
+  },
+  "verify-all-mini": {
+    "label": "verify with mini (cheaper), all attempts",
+    "config": {
+      "model": "nano",
+      "tag": "verify-all-mini",
+      "cases_file": "lab/splits/holdout.jsonl",
+      "harbour_dir": "lab/solution",
+      "seed": "op03-lab-v1",
+      "cache": true,
+      "ladder": "nano,strong",
+      "prune": true,
+      "prefix_cache": true,
+      "verify": true,
+      "verify_model": "mini",
+      "verify_scope": "all",
+      "compact": false,
+      "n": 60,
+      "wall_s": 0.8
+    },
+    "reader_ok": true
+  },
+  "verify-first-strong": {
+    "label": "verify attempt 0 only, strong",
+    "config": {
+      "model": "nano",
+      "tag": "verify-first-strong",
+      "cases_file": "lab/splits/holdout.jsonl",
+      "harbour_dir": "lab/solution",
+      "seed": "op03-lab-v1",
+      "cache": true,
+      "ladder": "nano,strong",
+      "prune": true,
+      "prefix_cache": true,
+      "verify": true,
+      "verify_model": "strong",
+      "verify_scope": "first",
+      "compact": false,
+      "n": 60,
+      "wall_s": 0.8
+    },
+    "reader_ok": true
+  },
+  "verify-first-mini": {
+    "label": "verify attempt 0 only, mini",
+    "config": {
+      "model": "nano",
+      "tag": "verify-first-mini",
+      "cases_file": "lab/splits/holdout.jsonl",
+      "harbour_dir": "lab/solution",
+      "seed": "op03-lab-v1",
+      "cache": true,
+      "ladder": "nano,strong",
+      "prune": true,
+      "prefix_cache": true,
+      "verify": true,
+      "verify_model": "mini",
+      "verify_scope": "first",
+      "compact": false,
+      "n": 60,
+      "wall_s": 0.8
+    },
+    "reader_ok": true
+  },
+  "prune-nano-ladderNS-verify": {
+    "label": "nano->strong + verify, NO prefix cache",
+    "config": {
+      "model": "nano",
+      "tag": "prune-nano-ladderNS-verify",
+      "cases_file": "lab/splits/holdout.jsonl",
+      "harbour_dir": "lab/solution",
+      "seed": "op03-lab-v1",
+      "cache": true,
+      "ladder": "nano,strong",
+      "prune": true,
+      "prefix_cache": false,
+      "verify": true,
+      "verify_model": "strong",
+      "verify_scope": "all",
+      "compact": false,
+      "n": 60,
+      "wall_s": 0.8
+    },
+    "reader_ok": true
+  },
+  "prune-strong": {
+    "label": "schema prune, strong",
+    "config": {
+      "model": "strong",
+      "tag": "prune-strong",
+      "cases_file": "lab/splits/holdout.jsonl",
+      "harbour_dir": "lab/solution",
+      "seed": "op03-lab-v1",
+      "cache": true,
+      "ladder": null,
+      "prune": true,
+      "prefix_cache": false,
+      "verify": false,
+      "verify_model": null,
+      "verify_scope": null,
+      "compact": false,
+      "n": 60,
+      "wall_s": 0.7
+    },
+    "reader_ok": true
+  },
+  "prune-strong-pc": {
+    "label": "schema prune, strong + prefix cache",
+    "config": {
+      "model": "strong",
+      "tag": "prune-strong-pc",
+      "cases_file": "lab/splits/holdout.jsonl",
+      "harbour_dir": "lab/solution",
+      "seed": "op03-lab-v1",
+      "cache": true,
+      "ladder": null,
+      "prune": true,
+      "prefix_cache": true,
+      "verify": false,
+      "verify_model": null,
+      "verify_scope": null,
+      "compact": false,
+      "n": 60,
+      "wall_s": 0.8
+    },
+    "reader_ok": true
+  },
+  "strong-noprune": {
+    "label": "strong, full prompt",
+    "config": {
+      "model": "strong",
+      "tag": "strong-noprune",
+      "cases_file": "lab/splits/holdout.jsonl",
+      "harbour_dir": "lab/solution",
+      "seed": "op03-lab-v1",
+      "cache": true,
+      "ladder": null,
+      "prune": false,
+      "prefix_cache": false,
+      "verify": false,
+      "verify_model": null,
+      "verify_scope": null,
+      "compact": false,
+      "n": 60,
+      "wall_s": 0.7
+    },
+    "reader_ok": true
+  }
+}

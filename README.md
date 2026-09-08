@@ -103,6 +103,8 @@ Levers on the worker command: `--prune` (per-case tool schemas), `--prefix-cache
 
 ```
 vendor/challenge/   pristine upstream: the agent, 180 cases, scorer, reader
+                    (Harbour and cases © Deployment.inc; MIT for code,
+                    CC BY 4.0 for problem text - see UPSTREAM-LICENSE.md)
 lab/                gateway, simulated models, worker, analysis, plots, rerun
 memsolver/          shared pricing and capability tables
 lab/solution/       working copy of the agent where the cost levers live
