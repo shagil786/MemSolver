@@ -114,6 +114,29 @@ DECISIONS.md        why each modelling choice was made
 EXPERIMENT_LOG.md   what was tried and what it cost
 ```
 
+## Testing on a real model
+
+The same harness can call a real OpenAI-compatible provider instead of the
+simulator. A recording gateway forwards the agent's calls, logs the real token
+usage at pinned list prices, and lets the normal scorer and analysis run
+unchanged. Set your key in the environment and pick a budget model:
+
+```bash
+export LLM_API_KEY=sk-...                       # used by the agent's own client
+python3 -m lab.worker --cases lab/splits/real-smoke.jsonl \
+    --model gpt-4.1-mini-2025-04-14 \
+    --harbour-dir vendor/challenge \
+    --run-dir results/real-mini --seed op03-lab-v1 --tag real-mini \
+    --real-url https://api.openai.com/v1
+```
+
+Known real ids with pinned prices live in `memsolver/pricing.py`
+(`gpt-4.1-mini`, `gpt-4.1-nano`, `gpt-5-mini`). This spends real money;
+`real-smoke.jsonl` is 12 cases and costs well under a cent at those prices.
+Note that the simulated levers that change which "model" answers a call
+(ladder, verify, p-scales) are simulator concepts; in real mode you test a
+single real model per run, with or without `--prune`.
+
 ## Where this goes next
 
 Two ideas remain untried: redo only the failed step instead of re-planning the
