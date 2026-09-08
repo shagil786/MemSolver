@@ -1,4 +1,4 @@
-# MEMO — Cost per resolved case (OP-03, to the CFO)
+# MEMO: cost per resolved case (OP-03, for the CFO)
 
 **Prior (shipped reference, unmodified Harbour, gpt-4.1-mini class):**
 **$0.00425 per resolved case** on the 60-case holdout, resolving 38/60 (63.3%),
@@ -17,8 +17,8 @@ p95 latency 2.9 s.
 
 The prompt-shrinking lever alone removes ~17% of cost with zero quality loss
 (prune + mini vs shipped: identical 38/60 resolutions at 0.83x cost). Dropping
-to the cheapest budget tier (nano) gets us to **20% of prior cost** — a ~5x
-reduction, not yet the promised 10x — while quality holds at 65%. The
+to the cheapest budget tier (nano) gets us to **20% of prior cost**, a ~5x reduction, not yet the
+promised 10x, while quality holds at 65%. The
 The free self-hosted prompt-prefix cache (unchanged conversation head billed
 at $0) roughly halves cost on its own, and the cheapest tier now clears the
 0.10x bar at **$0.00039 per resolved case (65% quality)**. A grounded
@@ -33,7 +33,7 @@ sit at 65% exact-goal success (39/60). The gap to the 85.3% floor is
 concentrated in hard-family cases (fraud/identity refusal, injected
 instructions, closed-loan traps) where a cheap model guesses wrong and
 commits; these are precisely the cases where a second, stronger check would
-pay. Identity verification is never skipped in any point we would ship — the
+pay. Identity verification is never skipped in any point we would ship. The
 savings come from prompt size and tier choice, not from policy.
 
 **If volume doubles or mix shifts:** cost scales linearly with volume; the
