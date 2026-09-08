@@ -396,6 +396,13 @@ def run_case(
     committed = False
     carried_transcript: list[str] = []
     steps = 0
+    # Grounded verification lever: H_AGENT_VERIFY=grounded asks a (stronger)
+    # model to review the transcript before committing; a "redo" restarts the
+    # attempt (next model on the ladder) instead of committing silently.
+    verify_on = os.environ.get("H_AGENT_VERIFY") == "grounded"
+    verify_model = os.environ.get("H_AGENT_VERIFY_MODEL") or "strong"
+    verify_max = int(os.environ.get("H_AGENT_VERIFY_MAX", "2"))
+    verifications = 0
 
     with tracing.start_span("case", **{"harbour.case_id": case_id}):
         for attempt in range(MAX_ATTEMPTS):
@@ -437,6 +444,30 @@ def run_case(
                     reported = args.get("actions_taken")
                     if isinstance(reported, list):
                         attempt_actions.extend(str(a) for a in reported)
+                    if verify_on and verifications < verify_max:
+                        verifications += 1
+                        gen = attempt_model or os.environ.get("LLM_MODEL", "mini")
+                        vresp = llm.complete(
+                            messages
+                            + [{"role": "user", "content": (
+                                "[HARBOUR_VERIFY gen=" + gen + "] Verify the case was fully "
+                                'and correctly handled. Reply {"verify": "ok"} or '
+                                '{"verify": "redo"} only.')}],
+                            max_tokens=80,
+                            model=verify_model,
+                        )
+                        try:
+                            vobj = json.loads((vresp.get("content") or "").strip())
+                            redo = vobj.get("verify") == "redo"
+                        except (ValueError, TypeError):
+                            redo = False
+                        if redo:
+                            needs_retry = True
+                            messages.append(
+                                {"role": "user", "content":
+                                 "Verification requested a redo; retrying the case."}
+                            )
+                            break
                     ok, result = _call_tool(
                         backend,
                         case_id,

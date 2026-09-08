@@ -16,6 +16,8 @@ Difficulty axis is the published three-tier split (easy/medium/hard).
 
 from __future__ import annotations
 
+import os
+
 from memsolver import pricing
 
 DIFFICULTIES: tuple[str, ...] = ("easy", "medium", "hard")
@@ -61,3 +63,20 @@ def profile(model_or_alias: str, difficulty: str) -> dict:
             f"Unknown difficulty: {difficulty!r}. Known: {list(DIFFICULTIES)}"
         )
     return CAPABILITY[model][difficulty]
+
+
+def effective_p_correct(model_or_alias: str, difficulty: str) -> float:
+    """Base ``p_correct`` after the calibration scale and any lab overrides.
+
+    The gateway and the verification decision must agree on this value, so it
+    lives here rather than being inlined in both places.
+    """
+    model = pricing.resolve(model_or_alias)
+    base = CAPABILITY[model][difficulty]["p_correct"]
+    override = os.environ.get("LLM_LAB_P_OVERRIDE")
+    if override:
+        return min(0.999, float(override))
+    scale = float(os.environ.get(f"LLM_LAB_P_SCALE_{model.upper()}")
+                  or os.environ.get("LLM_LAB_P_SCALE")
+                  or str(P_SCALE.get(model, 1.0)))
+    return min(0.999, base * scale)

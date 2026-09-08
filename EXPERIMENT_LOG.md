@@ -65,3 +65,23 @@ above are post-fix):
 prune+strong now clears the 85.3% quality floor (52/60) but at 2.5x cost and
 worse p95; no point yet jointly passes the 0.10x cost bar and the quality
 floor. Next: verification pass + transcript compaction + prefix caching.
+
+## 2026-09-08 (final) - prefix caching + grounded verification levers
+Implemented and measured (post audit-fix baseline, holdout 60):
+- **Free prompt-prefix cache** (`--prefix-cache`): any unchanged leading part of
+  the conversation is served from a free self-hosted cache, so only the new
+  suffix is billed each call. Roughly halves total cost on the shipped agent
+  ($0.00425 -> $0.00195/resolved).
+- **Grounded verification** (`--verify`, solution agent): before committing,
+  a strong model reviews the transcript; if it flags the attempt, the next
+  attempt runs with the next ladder model. Simulated as a grounded re-check:
+  clean attempts always pass, flawed attempts are caught with tier-dependent
+  probability. Only affordable with the prefix cache (verification without it:
+  $0.0173/resolved vs $0.00117 with it).
+- New frontier highlights (holdout): prune+nano+prefix-cache hits $0.00039/
+  resolved (0.09x, passes the 0.10x bar) at 65% quality; prune+nano->strong+
+  verify+prefix-cache reaches 86.7% quality (52/60, above the floor) at 0.28x
+  cost but with 12 s p95 and 26% elective deferrals. No point yet jointly
+  passes cost bar + quality floor + p95 + elective-deferral gates; the two
+  open fixes are scoping verification to medium/hard work and reducing cheap
+  tier deferrals.

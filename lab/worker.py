@@ -126,6 +126,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--prune", action="store_true",
                     help="advertise only the tools this case needs (system-prompt pruning)")
     ap.add_argument("--quiet", action="store_true")
+    ap.add_argument("--prefix-cache", action="store_true",
+                    help="free self-hosted prompt-prefix cache (bills only the new suffix)")
+    ap.add_argument("--verify", action="store_true",
+                    help="grounded verification pass before commit (solution harbour)")
+    ap.add_argument("--verify-model", default="strong")
+    ap.add_argument("--verify-max", default="2")
     args = ap.parse_args(argv)
 
     run_dir = args.run_dir
@@ -144,7 +150,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.limit:
         cases = cases[: args.limit]
 
-    gw = SimGateway(args.defs, run_dir / "ledger.jsonl", args.seed, cache=not args.no_cache)
+    gw = SimGateway(args.defs, run_dir / "ledger.jsonl", args.seed,
+                    cache=not args.no_cache, prefix_cache=args.prefix_cache)
     server = make_server(gw)
     thread = None
     import threading
@@ -169,6 +176,10 @@ def main(argv: list[str] | None = None) -> int:
         os.environ["H_AGENT_LADDER"] = args.ladder
     if args.prune:
         os.environ["H_AGENT_PRUNE"] = "1"
+    if args.verify:
+        os.environ["H_AGENT_VERIFY"] = "grounded"
+        os.environ["H_AGENT_VERIFY_MODEL"] = args.verify_model
+        os.environ["H_AGENT_VERIFY_MAX"] = args.verify_max
 
     outcomes = []
     started = time.time()
@@ -201,6 +212,9 @@ def main(argv: list[str] | None = None) -> int:
         "cache": not args.no_cache,
         "ladder": args.ladder,
         "prune": args.prune,
+        "prefix_cache": args.prefix_cache,
+        "verify": args.verify,
+        "verify_model": args.verify_model if args.verify else None,
         "n": len(outcomes),
         "wall_s": round(time.time() - started, 1),
     }

@@ -48,9 +48,13 @@ class SimGateway:
     """Stateful-but-deterministic provider front end for the controller."""
 
     def __init__(self, cases_path: str | Path, ledger_path: str | Path,
-                 world_seed: str, cache: bool = True) -> None:
+                 world_seed: str, cache: bool = True,
+                 prefix_cache: bool = False) -> None:
         self.world_seed = world_seed
         self.cache_enabled = cache
+        # prefix caching: any unchanged leading part of the conversation is
+        # served from a free self-hosted cache (OP-03) -> billed at $0.
+        self.prefix_cache = prefix_cache
         self.ledger_path = Path(ledger_path)
         self.ledger_path.parent.mkdir(parents=True, exist_ok=True)
         self._cases: dict[str, dict] = {}
@@ -60,6 +64,7 @@ class SimGateway:
                     row = json.loads(line)
                     self._cases[row["case_id"]] = row
         self._cache: dict[tuple[str, str, int], dict] = {}
+        self._prefixes: dict[str, list[dict]] = {}
         self._totals: dict[str, dict[str, float]] = {}
         # RLock: complete() holds the lock while _ledger_row() takes it again.
         self._lock = threading.RLock()
@@ -94,30 +99,55 @@ class SimGateway:
 
     # -- completion ---------------------------------------------------------
 
+    def _cached_prefix_tokens(self, case_id: str, messages: list[dict]) -> int:
+        """Tokens in the unchanged leading part of the conversation (free)."""
+        prev = self._prefixes.get(case_id)
+        if not prev:
+            return 0
+        k = 0
+        while k < min(len(prev), len(messages)) and prev[k] == messages[k]:
+            k += 1
+        return max(0, sum(len(str(m.get("content") or "")) for m in messages[:k]) // 4)
+
     def complete(self, model: str, messages: list[dict], max_tokens: int,
                  case_id: str) -> dict:
         model = pricing.resolve(model)  # aliases/unknowns raise -> 400 upstream
         ctx = self.ctx_for(case_id, messages)
-        override = os.environ.get("LLM_LAB_P_OVERRIDE")
-        if override:
-            p_correct = float(override)
-        else:
-            base = simconfig.profile(model, ctx.difficulty)["p_correct"]
-            scale = float(os.environ.get(f"LLM_LAB_P_SCALE_{model.upper()}")
-                          or os.environ.get("LLM_LAB_P_SCALE")
-                          or str(simconfig.P_SCALE.get(model, 1.0)))
-            p_correct = min(0.999, base * scale)
+        p_correct = simconfig.effective_p_correct(model, ctx.difficulty)
         attempt = plans._attempt_index(messages)
         step = len(plans._assistant_tools(messages))
 
-        key = (model, case_id, attempt, json.dumps(messages, sort_keys=True), int(max_tokens))
         with self._lock:
+            cached_in = self._cached_prefix_tokens(case_id, messages) if self.prefix_cache else 0
+            self._prefixes[case_id] = [dict(m) for m in messages]
+
+            # ---- grounded verification request (agent-side lever) ----------
+            verify_gen = plans.verify_gen_model(messages)
+            if verify_gen is not None:
+                approved = plans.verify_decision(ctx, verify_gen, attempt, model,
+                                                 self.world_seed)
+                content = json.dumps({"verify": "ok" if approved else "redo"})
+                output_tokens = min(_content_tokens(content), int(max_tokens))
+                latency_ms = self._latency(model, ctx, attempt, step)
+                row = self._ledger_row(case_id, model, messages, content, output_tokens,
+                                       latency_ms=latency_ms, cache_hit=cached_in > 0,
+                                       step=step, attempt=attempt, stage="verify",
+                                       cached_input_tokens=cached_in)
+                return self._openai_reply(model, content, row)
+
+            # ---- normal generation -----------------------------------------
+            key = (model, case_id, attempt, json.dumps(messages, sort_keys=True),
+                   int(max_tokens))
             if self.cache_enabled and key in self._cache:
-                cached = self._cache[key]
-                row = self._ledger_row(case_id, model, messages, cached["content"],
-                                       cached["output_tokens"], latency_ms=5,
-                                       cache_hit=True, step=step, attempt=attempt)
-                return self._openai_reply(model, cached["content"], row)
+                hit = self._cache[key]
+                # exact repeat of a request -> the whole response is served from
+                # the free self-hosted cache: bill no input tokens.
+                row = self._ledger_row(case_id, model, messages, hit["content"],
+                                       hit["output_tokens"], latency_ms=5,
+                                       cache_hit=True, step=step, attempt=attempt,
+                                       cached_input_tokens=_usage_tokens(messages),
+                                       bill_zero=True)
+                return self._openai_reply(model, hit["content"], row)
 
             action = plans.next_action(messages, ctx, model, self.world_seed, p_correct)
             content = json.dumps(action)
@@ -125,8 +155,10 @@ class SimGateway:
 
             latency_ms = self._latency(model, ctx, attempt, step)
             row = self._ledger_row(case_id, model, messages, content, output_tokens,
-                                   latency_ms=latency_ms, cache_hit=False,
-                                   step=step, attempt=attempt)
+                                   latency_ms=latency_ms,
+                                   cache_hit=(cached_in > 0 and self.prefix_cache),
+                                   step=step, attempt=attempt,
+                                   cached_input_tokens=cached_in)
             if self.cache_enabled:
                 self._cache[key] = {"content": content, "output_tokens": output_tokens}
             return self._openai_reply(model, content, row)
@@ -141,18 +173,22 @@ class SimGateway:
 
     def _ledger_row(self, case_id: str, model: str, messages: list[dict],
                     content: str, output_tokens: int, latency_ms: int,
-                    cache_hit: bool, step: int, attempt: int) -> dict:
-        input_tokens = _usage_tokens(messages)
-        # A self-hosted cache is free (OP-03): a cache hit bills nothing.
-        cost = 0.0 if cache_hit else pricing.cost_for(model, input_tokens, output_tokens)
+                    cache_hit: bool, step: int, attempt: int,
+                    stage: str = "generate", cached_input_tokens: int = 0,
+                    bill_zero: bool = False) -> dict:
+        # input_tokens are the *billed* tokens: a free self-hosted prefix cache
+        # means an unchanged leading part of the conversation costs nothing.
+        input_tokens = 0 if bill_zero else max(0, _usage_tokens(messages) - cached_input_tokens)
+        cost = 0.0 if bill_zero else pricing.cost_for(model, input_tokens, output_tokens)
         row = {
             "case_id": case_id,
             "model": model,
             "tier": model,
             "input_tokens": input_tokens,
             "output_tokens": output_tokens,
+            "cached_input_tokens": int(cached_input_tokens),
             "cost_usd": cost,
-            "stage": "generate",
+            "stage": stage,
             "attempt": attempt,
             "step": step,
             "cache_hit": bool(cache_hit),

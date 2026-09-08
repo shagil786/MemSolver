@@ -56,3 +56,17 @@ Record of the load-bearing choices in this lab and why they were made.
 3. Prompt-prefix caching in the gateway (self-hosted = free) for retries.
 4. Content-based easy→nano routing (family keywords), keeping mini for the
    hard families instead of a flat tier.
+
+## Levers shipped later (audit-fix session)
+- **Free prompt-prefix cache** (gateway, `--prefix-cache`): bills only the
+  uncached suffix of each request; self-hosted caches are free per OP-03.
+  Mirrors real provider prefix caching (the unchanged system prompt + history
+  head is the cacheable prefix).
+- **Grounded verification pass** (`--verify`, solution agent): strong-tier
+  review before commit; a "redo" restarts the attempt on the next ladder
+  model. Simulated as a grounded audit re-check (clean attempts always pass;
+  flawed attempts caught with VERIFY_DETECT per tier), NOT a free-form
+  self-review (which research shows degrades accuracy). Verification only pays
+  when combined with the prefix cache.
+- Verifier marker travels as the newest user turn so the gateway stays a pure
+  function of the transcript.

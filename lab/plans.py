@@ -1017,3 +1017,55 @@ def _fallback_email(message: str) -> str:
     clean = _strip_injected(message)
     emails = _EMAIL_RE.findall(clean)
     return emails[-1] if emails else "customer@example.com"
+
+
+# ---------------------------------------------------------------------------
+# Grounded verification pass (solution-side lever)
+# ---------------------------------------------------------------------------
+#
+# Before committing, the agent can ask a (typically stronger) model to review
+# the completed transcript. The simulated verifier approves a genuinely clean
+# attempt and *detects* a flawed attempt with probability VERIFY_DETECT[tier]
+# - i.e. it behaves like a grounded re-check of the audit trail, not a
+# free-form self-review (free-form self-review is known to be unreliable).
+# When it demands a redo, the agent starts the next attempt (usually with the
+# next model on the ladder), which fixes most silent-wrong commits.
+
+VERIFY_DETECT: dict[str, float] = {
+    "nano": 0.30,
+    "mini": 0.45,
+    "strong": 0.70,
+}
+
+_VERIFY_MARKER = re.compile(r"HARBOUR_VERIFY gen=([A-Za-z0-9_.-]+)")
+
+
+def verify_gen_model(messages: list[dict]) -> str | None:
+    """The generation model named in the latest verification marker, if any."""
+    for m in reversed(messages):
+        if m.get("role") != "user":
+            continue
+        text = str(m.get("content") or "")
+        if not text.startswith("[HARBOUR_VERIFY"):
+            # the marker is always the newest user turn when present
+            if _VERIFY_MARKER.search(text):
+                return _VERIFY_MARKER.search(text).group(1)
+            return None
+        mm = _VERIFY_MARKER.search(text)
+        if mm:
+            return mm.group(1)
+    return None
+
+
+def verify_decision(ctx: CaseCtx, gen_model: str, attempt: int,
+                    verify_model: str, world_seed: str) -> bool:
+    """True = approve commit; False = demand a redo."""
+    from memsolver import pricing, simconfig
+    p_gen = simconfig.effective_p_correct(gen_model, ctx.difficulty)
+    clean = _hash01(ctx.case_id, gen_model, str(attempt), world_seed) < p_gen
+    if clean:
+        return True
+    vm = pricing.resolve(verify_model)
+    detect = VERIFY_DETECT.get(vm, 0.5)
+    caught = _hash01(ctx.case_id, vm, str(attempt), "verify", world_seed) < detect
+    return not caught

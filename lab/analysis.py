@@ -129,6 +129,9 @@ def consistency_check(directory: Path, defs_path: Path) -> dict | None:
 ORDER = [
     ("shipped-baseline", "shipped agent, gpt-4.1-mini class (reference)", False,
      "Frozen starter reference: unmodified Harbour, single mini model, full prompt."),
+    ("shipped-prefixcache", "shipped + free prefix cache", False,
+     "Reference agent but every unchanged conversation head is served from the "
+     "free self-hosted prompt-prefix cache."),
     ("sol-noprune-mini", "solution no-op, mini", False,
      "Solution copy with no levers enabled (equivalence check)."),
     ("prune-mini", "schema prune, mini", False,
@@ -139,8 +142,21 @@ ORDER = [
      "Downgrade to nano only (no pruning)."),
     ("ladder-ns-prune", "nano->strong ladder + prune", False,
      "Prune + start on nano, escalate failed attempts to strong."),
+    ("prune-nano-pc", "schema prune, nano + prefix cache", False,
+     "Prune + nano + free prefix cache (bills only the new suffix per call)."),
+    ("prune-mini-pc-verify", "prune, mini->strong + verify + prefix cache", False,
+     "Mini with a strong grounded verification pass before commit (redo on "
+     "detected flaws), prefix-cached."),
+    ("prune-nano-ladderNS-verify-pc", "nano->strong + grounded verify + prefix cache", False,
+     "Nano on attempt 0, strong on retry, strong grounded verification before "
+     "commit, free prefix cache - the cheap quality play."),
+    ("prune-nano-ladderNS-verify", "nano->strong + verify, NO prefix cache", True,
+     "Same as above without prefix caching - verify re-reads the whole "
+     "transcript each time (rejected: verification only pays with caching)."),
     ("prune-strong", "schema prune, strong", False,
      "Prune + upgrade to the strongest budget tier (quality push)."),
+    ("prune-strong-pc", "schema prune, strong + prefix cache", False,
+     "Strong tier with the free prefix cache (quality + cheaper retries)."),
     ("strong-noprune", "strong, full prompt", False,
      "Upgrade to strong only (quality ceiling probe)."),
 ]
